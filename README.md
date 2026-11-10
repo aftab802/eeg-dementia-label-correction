@@ -47,16 +47,16 @@ data, `train_test_subject_overlap` (0 under the leakage-safe protocol).
 
 | Result in the paper | Value | Source of the number | Re-run with this repository? |
 |---|---|---|---|
-| Tuned XGBoost, 39 features | 61.44 % | Original code not in the archive | Reimplemented; **must be re-run** |
+| Tuned XGBoost, 39 features | 61.44 % | Original run | **Re-run: 61.50 %; nested CV 60.26 ± 5.81 %** |
 | Follow-up experiments (53.41 %, 55.82 %, 60.26 %, 59.08 %, 36.36 %) | — | Original code not in the archive | Not reimplemented |
-| Cost-sensitive XGBoost (notebook) | 65.91 % | Original notebook, output preserved | `run_subject_vote_xgb.py` |
+| Cost-sensitive XGBoost (notebook) | 65.91 % | Original notebook, output preserved | **Re-run: 67.05 %** |
 
 ## Points to resolve against the manuscript
 
 * Table 3 lists 4 band-power + 24 summary + 4 ratio features (= 32) plus 11 graph features, which sums to 43, not 39.
   The code builds 28 qEEG features (6 statistics × 4 bands + 4 ratios, the band power entering as the per-band mean),
   giving 39 with the graph features.
-* GridSearchCV's `best_score_` is optimistic; the script also reports a nested-CV estimate.
+* GridSearchCV's `best_score_` is optimistic; the script also reports a nested-CV estimate (re-run: 60.26 ± 5.81 %).
 
 ## Repository layout
 
