@@ -1,0 +1,12 @@
+numpy>=1.26
+scipy>=1.11
+pandas>=2.0
+scikit-learn>=1.4
+mne>=1.6
+pymatreader>=0.0.30
+xgboost>=2.0
+imbalanced-learn>=0.12
+matplotlib>=3.7
+pytest>=7.4
+eeglabio>=0.0.2
+edfio>=0.4
