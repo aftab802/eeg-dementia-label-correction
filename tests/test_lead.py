@@ -50,3 +50,11 @@ def test_too_few_features_is_an_error():
     with pytest.raises(ValueError):
         lead.evaluate(X, y, k=25, degree=2)
     assert lead.n_expanded(3, 4) == 34  # 3 channel-averaged biomarkers need degree >= 4 for k = 25
+
+
+def test_grouped_cv_keeps_participants_together():
+    X, y = _toy()
+    groups = np.repeat(np.arange(60), 2)  # two recordings per participant, same label
+    y = np.repeat(y[::2], 2)
+    r = lead.evaluate(X, y, n_splits=10, groups=groups)
+    assert r["grouped"] and r["participants_shared_across_folds"] == 0

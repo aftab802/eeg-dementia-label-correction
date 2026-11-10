@@ -69,8 +69,15 @@ def n_expanded(n_base: int, degree: int) -> int:
     return comb(n_base + degree, degree) - 1
 
 
-def evaluate(X: np.ndarray, y: np.ndarray, n_splits: int = 10, random_state: int = 42, **pipe_kwargs) -> dict:
-    """10-fold stratified CV of the full pipeline; pooled out-of-fold metrics."""
+def evaluate(X: np.ndarray, y: np.ndarray, n_splits: int = 10, random_state: int = 42, groups=None,
+             **pipe_kwargs) -> dict:
+    """10-fold stratified CV of the full pipeline; pooled out-of-fold metrics.
+
+    With ``groups`` (one participant id per row) the folds are drawn with
+    StratifiedGroupKFold, so recordings of one participant never straddle a
+    training/test boundary. Without it, rows are split independently, which
+    leaks participant identity whenever a participant contributes several rows.
+    """
     from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
     from sklearn.model_selection import StratifiedKFold, cross_val_predict
 
@@ -79,9 +86,21 @@ def evaluate(X: np.ndarray, y: np.ndarray, n_splits: int = 10, random_state: int
     if n_expanded(X.shape[1], degree) < k:
         raise ValueError(f"{X.shape[1]} base features at degree {degree} give {n_expanded(X.shape[1], degree)}"
                          f" expanded features, fewer than k={k}. Use per-channel biomarkers or a higher degree.")
-    cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
-    pred = cross_val_predict(build_pipeline(**pipe_kwargs), X, y, cv=cv)
-    fold_acc = [accuracy_score(y[te], pred[te]) for _, te in cv.split(X, y)]
+    if groups is None:
+        cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
+        splits = list(cv.split(X, y))
+    else:
+        from sklearn.model_selection import StratifiedGroupKFold
+        cv = StratifiedGroupKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
+        splits = list(cv.split(X, y, groups))
+        g = np.asarray(groups)
+        for tr, te in splits:
+            if set(g[tr]) & set(g[te]):
+                raise AssertionError("participant present in both training and test fold")
+    pred = cross_val_predict(build_pipeline(**pipe_kwargs), X, y, cv=splits)
+    fold_acc = [accuracy_score(y[te], pred[te]) for _, te in splits]
     return {"accuracy_pooled": accuracy_score(y, pred), "accuracy_fold_mean": float(np.mean(fold_acc)),
             "accuracy_fold_sd": float(np.std(fold_acc)), "confusion_matrix": confusion_matrix(y, pred).tolist(),
-            "report": classification_report(y, pred, output_dict=True, zero_division=0)}
+            "report": classification_report(y, pred, output_dict=True, zero_division=0),
+            "grouped": groups is not None,
+            "participants_shared_across_folds": 0 if groups is not None else None}

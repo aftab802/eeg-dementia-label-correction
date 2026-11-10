@@ -79,3 +79,22 @@ def test_lead_script_with_labels_csv(tmp_path):
 def test_lead_script_ds004504_proxy(bids, tmp_path):
     r = _run("run_lead_eeg.py", "--ds004504", str(bids), "--k", "10", "--folds", "3", cwd=tmp_path)
     assert r["n_subjects"] == 12 and r["cohort"].startswith("ds004504")
+
+
+@pytest.mark.skipif(not os.path.exists(os.path.join(SCRIPTS, "run_lead_cohort176.py")), reason="not in this repo")
+def test_lead_cohort176_script(bids, tmp_path):
+    photic = tmp_path / "ds006036"
+    rng = np.random.default_rng(1)
+    parts = pd.read_csv(bids / "participants.tsv", sep="\t")
+    for sub, g in zip(parts.participant_id, parts.Group):
+        d = photic / "derivatives" / sub / "eeg"
+        d.mkdir(parents=True)
+        mne.export.export_raw(str(d / f"{sub}_task-photomark_eeg.set"), _raw(g, rng), fmt="eeglab", verbose=False)
+    parts.to_csv(photic / "participants.tsv", sep="\t", index=False)
+    r = _run("run_lead_cohort176.py", "--ds004504", str(bids), "--ds006036", str(photic), "--k", "10", "--folds", "3",
+             cwd=tmp_path)
+    assert r["n_recordings"] == 34 and r["n_participants"] == 17 and r["n_dementia_recordings"] == 22
+    g = r["runs"]["per_channel_deg2__participant_grouped"]
+    assert g["grouped"] and g["participants_shared_across_folds"] == 0
+    assert set(r["runs"]) == {f"{c}__{p}" for c in ("per_channel_deg2", "channel_average_deg4")
+                              for p in ("recording_level", "participant_grouped")}

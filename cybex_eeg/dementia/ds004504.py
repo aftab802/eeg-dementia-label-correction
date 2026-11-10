@@ -73,13 +73,26 @@ def keyed_merge(features: pd.DataFrame, participants: pd.DataFrame, id_col: str 
     return m
 
 
-def derivative_recordings(bids_root: str):
-    """Yield (subject_id, path) for the denoised eyes-closed recordings."""
+def derivative_recordings(bids_root: str, task: str | None = "eyesclosed"):
+    """Yield (subject_id, path) for the denoised recordings in ``derivatives/``.
+
+    ``task='eyesclosed'`` selects the ds004504 resting recordings. ``task=None``
+    takes the single .set file of each subject whatever its task label, which is
+    what the companion photic-stimulation dataset ds006036 needs.
+    """
     d = os.path.join(bids_root, "derivatives")
     for sub in sorted(os.listdir(d)):
-        path = os.path.join(d, sub, "eeg", f"{sub}_task-eyesclosed_eeg.set")
-        if sub.startswith("sub-") and os.path.exists(path):
-            yield sub, path
+        if not sub.startswith("sub-"):
+            continue
+        eeg = os.path.join(d, sub, "eeg")
+        if task is not None:
+            path = os.path.join(eeg, f"{sub}_task-{task}_eeg.set")
+            if os.path.exists(path):
+                yield sub, path
+        elif os.path.isdir(eeg):
+            sets = sorted(f for f in os.listdir(eeg) if f.endswith("_eeg.set"))
+            if sets:
+                yield sub, os.path.join(eeg, sets[0])
 
 
 def load_recording(path: str, l_freq: float = 0.5, h_freq: float = 30.0, preload: bool = True):
