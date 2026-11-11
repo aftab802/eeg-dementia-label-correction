@@ -87,7 +87,7 @@ def test_lead_cohort176_script(bids, tmp_path):
     rng = np.random.default_rng(1)
     parts = pd.read_csv(bids / "participants.tsv", sep="\t")
     for sub, g in zip(parts.participant_id, parts.Group):
-        d = photic / "derivatives" / sub / "eeg"
+        d = photic / "derivatives" / "eeglab" / sub / "eeg"  # ds006036 layout
         d.mkdir(parents=True)
         mne.export.export_raw(str(d / f"{sub}_task-photomark_eeg.set"), _raw(g, rng), fmt="eeglab", verbose=False)
     parts.to_csv(photic / "participants.tsv", sep="\t", index=False)

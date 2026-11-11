@@ -81,6 +81,13 @@ def derivative_recordings(bids_root: str, task: str | None = "eyesclosed"):
     what the companion photic-stimulation dataset ds006036 needs.
     """
     d = os.path.join(bids_root, "derivatives")
+    if not any(x.startswith("sub-") for x in os.listdir(d)):
+        # ds006036 keeps its denoised files one level down, in derivatives/eeglab/
+        for pipeline in sorted(os.listdir(d)):
+            pd_ = os.path.join(d, pipeline)
+            if os.path.isdir(pd_) and any(x.startswith("sub-") for x in os.listdir(pd_)):
+                d = pd_
+                break
     for sub in sorted(os.listdir(d)):
         if not sub.startswith("sub-"):
             continue
